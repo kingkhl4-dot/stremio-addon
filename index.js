@@ -1,153 +1,199 @@
 const { addonBuilder, serveHTTP } = require("stremio-addon-sdk");
 
 const TMDB_API_KEY = process.env.TMDB_API_KEY;
+const TMDB_BASE = "https://api.themoviedb.org/3";
+const REGION = "SA";
 
 if (!TMDB_API_KEY) {
     console.error("TMDB_API_KEY is missing");
 }
 
+const catalogs = [
+    // ===== مكتبات المنصات =====
+    { type: "movie", id: "netflix_movies", name: "🔴 Netflix - أفلام" },
+    { type: "series", id: "netflix_series", name: "🔴 Netflix - مسلسلات" },
+
+    { type: "movie", id: "prime_movies", name: "🔵 Prime Video - أفلام" },
+    { type: "series", id: "prime_series", name: "🔵 Prime Video - مسلسلات" },
+
+    { type: "movie", id: "disney_movies", name: "🏰 Disney+ - أفلام" },
+    { type: "series", id: "disney_series", name: "🏰 Disney+ - مسلسلات" },
+
+    { type: "movie", id: "shahid_movies", name: "🟢 Shahid - أفلام" },
+    { type: "series", id: "shahid_series", name: "🟢 Shahid - مسلسلات" },
+
+    // ===== الأفلام =====
+    { type: "movie", id: "movie_trending", name: "🔥 رائج - أفلام" },
+    { type: "movie", id: "movie_featured", name: "⭐ مميز - أفلام" },
+    { type: "movie", id: "movie_new", name: "🆕 جديد - أفلام" },
+    { type: "movie", id: "movie_action", name: "💥 أكشن - أفلام" },
+    { type: "movie", id: "movie_crime", name: "🔪 جريمة - أفلام" },
+    { type: "movie", id: "movie_thriller", name: "⚡ إثارة - أفلام" },
+    { type: "movie", id: "movie_mystery", name: "🔍 غموض - أفلام" },
+    { type: "movie", id: "movie_horror", name: "👻 رعب - أفلام" },
+    { type: "movie", id: "movie_scifi", name: "🚀 خيال علمي - أفلام" },
+    { type: "movie", id: "movie_comedy", name: "😂 كوميدي - أفلام" },
+    { type: "movie", id: "movie_documentary", name: "🎥 وثائقيات - أفلام" },
+
+    // ===== المسلسلات =====
+    { type: "series", id: "series_trending", name: "🔥 رائج - مسلسلات" },
+    { type: "series", id: "series_featured", name: "⭐ مميز - مسلسلات" },
+    { type: "series", id: "series_new", name: "🆕 جديد - مسلسلات" },
+    { type: "series", id: "series_action", name: "💥 أكشن - مسلسلات" },
+    { type: "series", id: "series_crime", name: "🔪 جريمة - مسلسلات" },
+    { type: "series", id: "series_mystery", name: "🔍 غموض - مسلسلات" },
+    { type: "series", id: "series_scifi", name: "🚀 خيال علمي - مسلسلات" },
+    { type: "series", id: "series_comedy", name: "😂 كوميدي - مسلسلات" },
+    { type: "series", id: "series_documentary", name: "🎥 وثائقيات - مسلسلات" }
+].map(catalog => ({
+    ...catalog,
+    extra: [
+        {
+            name: "skip",
+            isRequired: false
+        }
+    ]
+}));
+
 const builder = new addonBuilder({
     id: "org.mycustomarabicaddon",
     version: "4.0.0",
     name: "إضافتي العربية الذكية",
-    description: "مكتبة عربية للأفلام والمسلسلات والمنصات مع بيانات TMDB و IMDb",
+    description: "مكتبة عربية للأفلام والمسلسلات والمنصات",
     resources: ["catalog", "meta"],
     types: ["movie", "series"],
-
-    catalogs: [
-        // ===== المنصات =====
-        { type: "movie", id: "netflix_movies", name: "🔴 Netflix - أفلام" },
-        { type: "series", id: "netflix_series", name: "🔴 Netflix - مسلسلات" },
-
-        { type: "movie", id: "prime_movies", name: "🔵 Prime Video - أفلام" },
-        { type: "series", id: "prime_series", name: "🔵 Prime Video - مسلسلات" },
-
-        { type: "movie", id: "disney_movies", name: "🏰 Disney+ - أفلام" },
-        { type: "series", id: "disney_series", name: "🏰 Disney+ - مسلسلات" },
-
-        { type: "movie", id: "shahid_movies", name: "🟢 Shahid - أفلام" },
-        { type: "series", id: "shahid_series", name: "🟢 Shahid - مسلسلات" },
-
-        // ===== أفلام =====
-        { type: "movie", id: "movie_trending", name: "🔥 رائج - أفلام" },
-        { type: "movie", id: "movie_featured", name: "⭐ مميز - أفلام" },
-        { type: "movie", id: "movie_new", name: "🆕 جديد - أفلام" },
-        { type: "movie", id: "movie_action", name: "💥 أكشن - أفلام" },
-        { type: "movie", id: "movie_crime", name: "🔪 جريمة - أفلام" },
-        { type: "movie", id: "movie_thriller", name: "⚡ إثارة - أفلام" },
-        { type: "movie", id: "movie_mystery", name: "🔍 غموض - أفلام" },
-        { type: "movie", id: "movie_horror", name: "👻 رعب - أفلام" },
-        { type: "movie", id: "movie_scifi", name: "🚀 خيال علمي - أفلام" },
-        { type: "movie", id: "movie_comedy", name: "😂 كوميدي - أفلام" },
-        { type: "movie", id: "movie_documentary", name: "🎥 وثائقيات - أفلام" },
-
-        // ===== مسلسلات =====
-        { type: "series", id: "series_trending", name: "🔥 رائج - مسلسلات" },
-        { type: "series", id: "series_featured", name: "⭐ مميز - مسلسلات" },
-        { type: "series", id: "series_new", name: "🆕 جديد - مسلسلات" },
-        { type: "series", id: "series_action", name: "💥 أكشن - مسلسلات" },
-        { type: "series", id: "series_crime", name: "🔪 جريمة - مسلسلات" },
-        { type: "series", id: "series_mystery", name: "🔍 غموض - مسلسلات" },
-        { type: "series", id: "series_scifi", name: "🚀 خيال علمي - مسلسلات" },
-        { type: "series", id: "series_comedy", name: "😂 كوميدي - مسلسلات" },
-        { type: "series", id: "series_documentary", name: "🎥 وثائقيات - مسلسلات" }
-    ]
+    catalogs
 });
-
-const BASE = "https://api.themoviedb.org/3";
-const REGION = "SA";
 
 // ========================================
 // TMDB
 // ========================================
 
 async function tmdb(path, params = {}) {
-    const query = new URLSearchParams({
-        api_key: TMDB_API_KEY,
-        language: "ar-SA",
-        ...params
-    });
+    const query = new URLSearchParams();
 
-    const response = await fetch(`${BASE}${path}?${query}`);
+    query.set("api_key", TMDB_API_KEY);
+    query.set("language", "ar-SA");
+
+    for (const [key, value] of Object.entries(params)) {
+        if (value !== undefined && value !== null) {
+            query.set(key, String(value));
+        }
+    }
+
+    const response = await fetch(
+        `${TMDB_BASE}${path}?${query.toString()}`
+    );
 
     if (!response.ok) {
-        throw new Error(`TMDB ${response.status}: ${path}`);
+        throw new Error(
+            `TMDB error ${response.status} - ${path}`
+        );
     }
 
     return response.json();
 }
 
 // ========================================
-// البحث عن Provider ID داخل السعودية
-// بدل ما نخمن أرقام Netflix / Shahid / الخ
+// مزودو المشاهدة في السعودية
 // ========================================
 
-let providerCache = null;
+let providersCache = null;
 
 async function loadProviders() {
-    if (providerCache) return providerCache;
+    if (providersCache) {
+        return providersCache;
+    }
 
-    const [movieData, tvData] = await Promise.all([
-        tmdb("/watch/providers/movie", { watch_region: REGION }),
-        tmdb("/watch/providers/tv", { watch_region: REGION })
+    const [movies, series] = await Promise.all([
+        tmdb("/watch/providers/movie", {
+            watch_region: REGION
+        }),
+        tmdb("/watch/providers/tv", {
+            watch_region: REGION
+        })
     ]);
 
-    providerCache = {
-        movie: movieData.results || [],
-        series: tvData.results || []
+    providersCache = {
+        movie: movies.results || [],
+        series: series.results || []
     };
 
-    return providerCache;
+    return providersCache;
 }
 
-function normalizeName(name = "") {
-    return name.toLowerCase().replace(/[^a-z0-9]/g, "");
+function cleanName(value = "") {
+    return value
+        .toLowerCase()
+        .replace(/[^a-z0-9]/g, "");
 }
 
 function findProvider(list, names) {
     for (const wanted of names) {
         const exact = list.find(
-            p => normalizeName(p.provider_name) === normalizeName(wanted)
+            provider =>
+                cleanName(provider.provider_name) ===
+                cleanName(wanted)
         );
 
-        if (exact) return exact.provider_id;
+        if (exact) {
+            return exact.provider_id;
+        }
     }
 
     for (const wanted of names) {
-        const partial = list.find(
-            p =>
-                normalizeName(p.provider_name).includes(normalizeName(wanted)) ||
-                normalizeName(wanted).includes(normalizeName(p.provider_name))
-        );
+        const partial = list.find(provider => {
+            const providerName = cleanName(
+                provider.provider_name
+            );
 
-        if (partial) return partial.provider_id;
+            const wantedName = cleanName(wanted);
+
+            return (
+                providerName.includes(wantedName) ||
+                wantedName.includes(providerName)
+            );
+        });
+
+        if (partial) {
+            return partial.provider_id;
+        }
     }
 
     return null;
 }
 
-async function getPlatformProvider(type, platform) {
+async function getProviderId(type, platform) {
     const providers = await loadProviders();
     const list = providers[type] || [];
 
-    const aliases = {
+    const names = {
         netflix: ["Netflix"],
-        prime: ["Amazon Prime Video", "Prime Video"],
-        disney: ["Disney Plus", "Disney+"],
-        shahid: ["Shahid VIP", "Shahid"]
+        prime: [
+            "Amazon Prime Video",
+            "Prime Video"
+        ],
+        disney: [
+            "Disney Plus",
+            "Disney+"
+        ],
+        shahid: [
+            "Shahid VIP",
+            "Shahid"
+        ]
     };
 
-    return findProvider(list, aliases[platform] || []);
+    return findProvider(
+        list,
+        names[platform] || []
+    );
 }
 
 // ========================================
-// إعداد الكتالوج
+// مصدر كل كتالوج
 // ========================================
 
 async function getCatalogSource(type, id) {
-
-    // ===== مكتبات المنصات =====
-
     const platformMatch = id.match(
         /^(netflix|prime|disney|shahid)_(movies|series)$/
     );
@@ -155,31 +201,37 @@ async function getCatalogSource(type, id) {
     if (platformMatch) {
         const platform = platformMatch[1];
 
-        const providerId = await getPlatformProvider(type, platform);
+        const providerId = await getProviderId(
+            type,
+            platform
+        );
 
         if (!providerId) {
-            console.log(`Provider not found: ${platform} / ${type}`);
+            console.log(
+                `Provider not found: ${platform}`
+            );
+
             return null;
         }
 
         return {
-            path: type === "movie"
-                ? "/discover/movie"
-                : "/discover/tv",
+            path:
+                type === "movie"
+                    ? "/discover/movie"
+                    : "/discover/tv",
 
             params: {
                 watch_region: REGION,
-                with_watch_providers: String(providerId),
+                with_watch_providers: providerId,
                 sort_by: "popularity.desc",
                 include_adult: "false"
             }
         };
     }
 
-    // ===== الأفلام =====
+    // ===== أفلام =====
 
     if (type === "movie") {
-
         if (id === "movie_trending") {
             return {
                 path: "/trending/movie/week",
@@ -192,33 +244,37 @@ async function getCatalogSource(type, id) {
                 path: "/discover/movie",
                 params: {
                     sort_by: "vote_average.desc",
-                    "vote_count.gte": "1000"
+                    "vote_count.gte": 1000
                 }
             };
         }
 
         if (id === "movie_new") {
-            const today = new Date().toISOString().slice(0, 10);
+            const today = new Date()
+                .toISOString()
+                .slice(0, 10);
 
             return {
                 path: "/discover/movie",
                 params: {
-                    sort_by: "primary_release_date.desc",
-                    "primary_release_date.lte": today,
-                    "vote_count.gte": "5"
+                    sort_by:
+                        "primary_release_date.desc",
+                    "primary_release_date.lte":
+                        today,
+                    "vote_count.gte": 5
                 }
             };
         }
 
         const genres = {
-            movie_action: "28",
-            movie_crime: "80",
-            movie_thriller: "53",
-            movie_mystery: "9648",
-            movie_horror: "27",
-            movie_scifi: "878",
-            movie_comedy: "35",
-            movie_documentary: "99"
+            movie_action: 28,
+            movie_crime: 80,
+            movie_thriller: 53,
+            movie_mystery: 9648,
+            movie_horror: 27,
+            movie_scifi: 878,
+            movie_comedy: 35,
+            movie_documentary: 99
         };
 
         if (genres[id]) {
@@ -226,16 +282,16 @@ async function getCatalogSource(type, id) {
                 path: "/discover/movie",
                 params: {
                     with_genres: genres[id],
-                    sort_by: "popularity.desc"
+                    sort_by: "popularity.desc",
+                    include_adult: "false"
                 }
             };
         }
     }
 
-    // ===== المسلسلات =====
+    // ===== مسلسلات =====
 
     if (type === "series") {
-
         if (id === "series_trending") {
             return {
                 path: "/trending/tv/week",
@@ -248,31 +304,35 @@ async function getCatalogSource(type, id) {
                 path: "/discover/tv",
                 params: {
                     sort_by: "vote_average.desc",
-                    "vote_count.gte": "500"
+                    "vote_count.gte": 500
                 }
             };
         }
 
         if (id === "series_new") {
-            const today = new Date().toISOString().slice(0, 10);
+            const today = new Date()
+                .toISOString()
+                .slice(0, 10);
 
             return {
                 path: "/discover/tv",
                 params: {
-                    sort_by: "first_air_date.desc",
-                    "first_air_date.lte": today,
-                    "vote_count.gte": "5"
+                    sort_by:
+                        "first_air_date.desc",
+                    "first_air_date.lte":
+                        today,
+                    "vote_count.gte": 5
                 }
             };
         }
 
         const genres = {
-            series_action: "10759",
-            series_crime: "80",
-            series_mystery: "9648",
-            series_scifi: "10765",
-            series_comedy: "35",
-            series_documentary: "99"
+            series_action: 10759,
+            series_crime: 80,
+            series_mystery: 9648,
+            series_scifi: 10765,
+            series_comedy: 35,
+            series_documentary: 99
         };
 
         if (genres[id]) {
@@ -280,7 +340,8 @@ async function getCatalogSource(type, id) {
                 path: "/discover/tv",
                 params: {
                     with_genres: genres[id],
-                    sort_by: "popularity.desc"
+                    sort_by: "popularity.desc",
+                    include_adult: "false"
                 }
             };
         }
@@ -290,92 +351,98 @@ async function getCatalogSource(type, id) {
 }
 
 // ========================================
-// جلب 5 صفحات = حتى 100 نتيجة
+// جلب حتى 100 عمل
 // ========================================
 
-async function fetchCatalogPages(source, startPage = 1) {
-    const pages = [];
+async function fetchPages(source, startPage) {
+    const requests = [];
 
-    for (let i = 0; i < 5; i++) {
-        pages.push(
+    for (let page = startPage; page < startPage + 5; page++) {
+        requests.push(
             tmdb(source.path, {
                 ...source.params,
-                page: String(startPage + i),
-                include_adult: "false"
+                page
             })
         );
     }
 
-    const results = await Promise.allSettled(pages);
+    const responses =
+        await Promise.allSettled(requests);
 
-    const items = [];
+    const all = [];
 
-    for (const result of results) {
+    for (const response of responses) {
         if (
-            result.status === "fulfilled" &&
-            Array.isArray(result.value.results)
+            response.status === "fulfilled" &&
+            Array.isArray(response.value.results)
         ) {
-            items.push(...result.value.results);
+            all.push(...response.value.results);
         }
     }
 
-    // إزالة التكرار
     const unique = [];
-    const seen = new Set();
+    const used = new Set();
 
-    for (const item of items) {
-        if (!item.id || seen.has(item.id)) continue;
-        seen.add(item.id);
+    for (const item of all) {
+        if (!item.id) continue;
+        if (!item.poster_path) continue;
+        if (used.has(item.id)) continue;
+
+        used.add(item.id);
         unique.push(item);
     }
 
-    return unique;
+    return unique.slice(0, 100);
 }
 
 // ========================================
-// IMDb ID
+// IMDb
 // ========================================
 
-const externalIdCache = new Map();
+const imdbCache = new Map();
 
-async function getIMDbId(type, tmdbId) {
+async function getImdbId(type, tmdbId) {
     const key = `${type}:${tmdbId}`;
 
-    if (externalIdCache.has(key)) {
-        return externalIdCache.get(key);
+    if (imdbCache.has(key)) {
+        return imdbCache.get(key);
     }
 
     try {
-        let imdbId = null;
+        const path =
+            type === "movie"
+                ? `/movie/${tmdbId}/external_ids`
+                : `/tv/${tmdbId}/external_ids`;
 
-        if (type === "movie") {
-            const data = await tmdb(`/movie/${tmdbId}/external_ids`);
-            imdbId = data.imdb_id || null;
-        } else {
-            const data = await tmdb(`/tv/${tmdbId}/external_ids`);
-            imdbId = data.imdb_id || null;
-        }
+        const data = await tmdb(path);
 
-        externalIdCache.set(key, imdbId);
+        const imdbId = data.imdb_id || null;
+
+        imdbCache.set(key, imdbId);
+
         return imdbId;
-
     } catch (error) {
-        console.error("IMDb ID error:", tmdbId, error.message);
-        externalIdCache.set(key, null);
+        console.error(
+            "IMDb lookup error:",
+            tmdbId,
+            error.message
+        );
+
+        imdbCache.set(key, null);
+
         return null;
     }
 }
 
 // ========================================
-// تحويل النتيجة إلى Meta Preview
+// تحويل نتيجة الكتالوج
 // ========================================
 
-async function makeCatalogMeta(item, type) {
-    const imdbId = await getIMDbId(type, item.id);
-
-    // إذا توفر IMDb نستخدمه
-    // حتى تتعرف إضافات Stremio الأخرى على نفس العمل
-    const stremioId = imdbId || `tmdb:${item.id}`;
+async function makeMetaPreview(item, type) {
+    const imdbId = await getImdbId(
+        type,
+        item.id
+    );
 
     const date =
         item.release_date ||
@@ -383,7 +450,10 @@ async function makeCatalogMeta(item, type) {
         "";
 
     return {
-        id: stremioId,
+        id:
+            imdbId ||
+            `tmdb:${item.id}`,
+
         type,
 
         name:
@@ -406,7 +476,9 @@ async function makeCatalogMeta(item, type) {
             "لا يوجد وصف عربي متوفر لهذا العمل.",
 
         releaseInfo:
-            date ? date.substring(0, 4) : undefined
+            date
+                ? date.substring(0, 4)
+                : undefined
     };
 }
 
@@ -416,13 +488,245 @@ async function makeCatalogMeta(item, type) {
 
 builder.defineCatalogHandler(async args => {
     try {
-        const source = await getCatalogSource(args.type, args.id);
+        const source =
+            await getCatalogSource(
+                args.type,
+                args.id
+            );
 
         if (!source) {
             return { metas: [] };
         }
 
-        const skip = Number(args.extra?.skip || 0);
+        const skip =
+            Number(args.extra?.skip || 0);
 
-        // كل دفعة عندنا 100 نتيجة
-        const startPage = Math.floor(skip / 100)
+        const startPage =
+            Math.floor(skip / 100) * 5 + 1;
+
+        const items =
+            await fetchPages(
+                source,
+                startPage
+            );
+
+        const metas = [];
+
+        // نعالجها دفعات صغيرة
+        for (
+            let index = 0;
+            index < items.length;
+            index += 10
+        ) {
+            const batch =
+                items.slice(
+                    index,
+                    index + 10
+                );
+
+            const converted =
+                await Promise.all(
+                    batch.map(item =>
+                        makeMetaPreview(
+                            item,
+                            args.type
+                        )
+                    )
+                );
+
+            metas.push(...converted);
+        }
+
+        return { metas };
+
+    } catch (error) {
+        console.error(
+            "Catalog error:",
+            error
+        );
+
+        return { metas: [] };
+    }
+});
+
+// ========================================
+// IMDb -> TMDB
+// ========================================
+
+async function imdbToTmdb(imdbId, type) {
+    const data = await tmdb(
+        `/find/${imdbId}`,
+        {
+            external_source: "imdb_id"
+        }
+    );
+
+    if (type === "movie") {
+        return (
+            data.movie_results?.[0] ||
+            null
+        );
+    }
+
+    return (
+        data.tv_results?.[0] ||
+        null
+    );
+}
+
+// ========================================
+// Meta Handler
+// ========================================
+
+builder.defineMetaHandler(async args => {
+    try {
+        let tmdbId = null;
+
+        if (args.id.startsWith("tt")) {
+            const found =
+                await imdbToTmdb(
+                    args.id,
+                    args.type
+                );
+
+            if (!found) {
+                return { meta: null };
+            }
+
+            tmdbId = found.id;
+        } else if (
+            args.id.startsWith("tmdb:")
+        ) {
+            tmdbId =
+                args.id.split(":")[1];
+        } else {
+            return { meta: null };
+        }
+
+        const mediaType =
+            args.type === "series"
+                ? "tv"
+                : "movie";
+
+        const data = await tmdb(
+            `/${mediaType}/${tmdbId}`,
+            {
+                append_to_response:
+                    "external_ids,credits"
+            }
+        );
+
+        const imdbId =
+            data.imdb_id ||
+            data.external_ids?.imdb_id ||
+            null;
+
+        const date =
+            data.release_date ||
+            data.first_air_date ||
+            "";
+
+        const genres =
+            Array.isArray(data.genres)
+                ? data.genres.map(
+                    genre => genre.name
+                )
+                : [];
+
+        const cast =
+            data.credits?.cast
+                ? data.credits.cast
+                    .slice(0, 10)
+                    .map(
+                        person =>
+                            person.name
+                    )
+                : [];
+
+        const directors =
+            data.credits?.crew
+                ? data.credits.crew
+                    .filter(
+                        person =>
+                            person.job ===
+                            "Director"
+                    )
+                    .slice(0, 3)
+                    .map(
+                        person =>
+                            person.name
+                    )
+                : [];
+
+        const meta = {
+            id:
+                imdbId ||
+                `tmdb:${tmdbId}`,
+
+            type: args.type,
+
+            name:
+                data.title ||
+                data.name ||
+                data.original_title ||
+                data.original_name ||
+                "بدون عنوان",
+
+            poster: data.poster_path
+                ? `https://image.tmdb.org/t/p/w500${data.poster_path}`
+                : undefined,
+
+            background:
+                data.backdrop_path
+                    ? `https://image.tmdb.org/t/p/original${data.backdrop_path}`
+                    : undefined,
+
+            description:
+                data.overview ||
+                "لا يوجد وصف عربي متوفر لهذا العمل.",
+
+            releaseInfo:
+                date
+                    ? date.substring(0, 4)
+                    : undefined,
+
+            genres,
+            cast,
+            director: directors,
+
+            imdbRating:
+                typeof data.vote_average ===
+                "number"
+                    ? data.vote_average.toFixed(1)
+                    : undefined,
+
+            runtime:
+                data.runtime
+                    ? `${data.runtime} min`
+                    : undefined
+        };
+
+        return { meta };
+
+    } catch (error) {
+        console.error(
+            "Meta error:",
+            error
+        );
+
+        return { meta: null };
+    }
+});
+
+// ========================================
+// تشغيل السيرفر
+// ========================================
+
+serveHTTP(
+    builder.getInterface(),
+    {
+        port:
+            process.env.PORT ||
+            7000
+    }
+);
