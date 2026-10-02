@@ -5,7 +5,7 @@ const TMDB_API_KEY = "c24438dae5c806e30d36966e4bc6d3a9";
 
 const builder = new addonBuilder({
     id: 'org.mycustomarabicaddon',
-    version: '2.3.0',
+    version: '2.4.0',
     name: 'إضافتي العربية الذكية',
     description: 'إضافة مخصصة مرتبة حسب (رائج، جديد، مميز) مع دعم كامل لسورسات التشغيل',
     resources: ['catalog', 'meta'],
@@ -130,6 +130,7 @@ builder.defineMetaHandler(async function(args) {
             tmdbId = args.id.replace('tmdb:', '');
         }
 
+        // التصحيح هنا: التحقق من عدم وجود المعرف لإيقاف العملية إن لم يكن موجوداً
         if (!tmdbId) {
             return { meta: null };
         }
