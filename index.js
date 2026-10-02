@@ -1,13 +1,14 @@
 const { addonBuilder, serveHTTP } = require("stremio-addon-sdk");
+const https = require('https');
 
 // مفتاح TMDB الخاص بك مدمج هنا
 const TMDB_API_KEY = "c24438dae5c806e30d36966e4bc6d3a9";
 
 const builder = new addonBuilder({
     id: 'org.mycustomarabicaddon',
-    version: '2.0.0',
+    version: '2.1.0',
     name: 'إضافتي العربية الذكية',
-    description: 'إضافة لجلب أحدث الأفلام والمسلسلات الرائجة بترجمة وعناوين عربية تلقائياً',
+    description: 'إضافة لجلب أحدث الأفلام والمسلسلات الرائجة والمميزة وأكشن بترجمة وعناوين عربية',
     resources: ['catalog'],
     types: ['movie', 'series'],
     catalogs: [
@@ -34,6 +35,23 @@ const builder = new addonBuilder({
     ]
 });
 
+// دالة لجلب البيانات بنظام Node الأساسي لضمان عدم توقف السيرفر
+function fetchJson(url) {
+    return new Promise((resolve, reject) => {
+        https.get(url, (res) => {
+            let data = '';
+            res.on('data', chunk => data += chunk);
+            res.on('end', () => {
+                try {
+                    resolve(JSON.parse(data));
+                } catch (e) {
+                    reject(e);
+                }
+            });
+        }).on('error', reject);
+    });
+}
+
 builder.defineCatalogHandler(async function(args) {
     try {
         let url = '';
@@ -49,10 +67,9 @@ builder.defineCatalogHandler(async function(args) {
             return { metas: [] };
         }
 
-        const response = await fetch(url);
-        const data = await response.json();
+        const data = await fetchJson(url);
 
-        if (!data.results) {
+        if (!data || !data.results) {
             return { metas: [] };
         }
 
