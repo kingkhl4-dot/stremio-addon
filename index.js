@@ -5,7 +5,7 @@ const builder = new addonBuilder({
     version: '1.0.0',
     name: 'إضافتي العربية المخصصة',
     description: 'إضافة لترتيب وعرض الأفلام بالعناوين العربية المجمعة',
-    resources: ['catalog', 'meta'],
+    resources: ['catalog'],
     types: ['movie', 'series'],
     catalogs: [
         {
