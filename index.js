@@ -1,4 +1,5 @@
-const { addonBuilder, serveHTTP } = require("stremio-addon-sdk");
+const { addonBuilder, getRouter } = require("stremio-addon-sdk");
+const express = require("express");
 
 const manifest = {
     id: "org.arabicstremioaddon",
@@ -27,4 +28,16 @@ builder.defineStreamHandler(({ type, id }) => {
     return Promise.resolve({ streams: [] });
 });
 
-serveHTTP(builder.getInterface(), { port: process.env.PORT || 7000 });
+const app = express();
+
+// صفحة ترحيبية للرابط الأساسي لكي لا يظهر خطأ Not Found
+app.get("/", (req, res) => {
+    res.send("<h2>Arabic Stremio Addon is Running Successfully!</h2><p>Use /manifest.json to install in Stremio.</p>");
+});
+
+app.use(getRouter(builder.getInterface()));
+
+const port = process.env.PORT || 7000;
+app.listen(port, "0.0.0.0", () => {
+    console.log(`Addon active on port ${port} and listening on 0.0.0.0`);
+});
