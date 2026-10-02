@@ -656,7 +656,7 @@ builder.defineMetaHandler(async args => {
         const arabicData = await tmdb(
             `/${mediaType}/${tmdbId}`,
             {
-                language: "ar-SA",
+                language: "ar",
                 append_to_response:
                     "external_ids,credits"
             }
