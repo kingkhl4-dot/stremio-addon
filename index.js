@@ -4,7 +4,7 @@ const builder = new addonBuilder({
     id: 'org.mycustomarabicaddon',
     version: '1.0.0',
     name: 'إضافتي العربية المخصصة',
-    description: 'إضافة لترتيب وعرض الأفلام بالعناوين العربية المخصصة',
+    description: 'إضافة لترتيب وعرض الأفلام بالعناوين العربية المجمعة',
     resources: ['catalog', 'meta'],
     types: ['movie', 'series'],
     catalogs: [
@@ -25,7 +25,7 @@ builder.defineCatalogHandler(function(args) {
                     type: 'movie',
                     name: 'اسم الفيلم بالعربي هنا',
                     poster: 'https://via.placeholder.com/300x450.png?text=Movie+Poster',
-                    description: 'هذا وصف مختصر للفيلم باللغة العربية.'
+                    description: 'هذا وصف مختصر للفيلم باللغة العربية'
                 }
             ]
         });
@@ -33,4 +33,4 @@ builder.defineCatalogHandler(function(args) {
     return Promise.resolve({ metas: [] });
 });
 
-serveHTTP(builder.interface, { port: process.env.PORT || 7000 });
+serveHTTP(builder.getInterface(), { port: process.env.PORT || 7000 });
