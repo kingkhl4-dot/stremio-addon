@@ -1,91 +1,135 @@
 const { addonBuilder, serveHTTP } = require("stremio-addon-sdk");
-const https = require('https');
 
-// مفتاح TMDB الخاص بك مدمج هنا
-const TMDB_API_KEY = "c24438dae5c806e30d36966e4bc6d3a9";
+const TMDB_API_KEY = process.env.TMDB_API_KEY || "PUT_YOUR_TMDB_KEY_HERE";
 
 const builder = new addonBuilder({
-    id: 'org.mycustomarabicaddon',
-    version: '2.1.0',
-    name: 'إضافتي العربية الذكية',
-    description: 'إضافة لجلب أحدث الأفلام والمسلسلات الرائجة والمميزة وأكشن بترجمة وعناوين عربية',
-    resources: ['catalog'],
-    types: ['movie', 'series'],
+    id: "org.mycustomarabicaddon",
+    version: "2.1.0",
+    name: "إضافتي العربية الذكية",
+    description: "أفلام ومسلسلات عربية: رائج، مميز، أكشن وأحدث الأعمال",
+    resources: ["catalog"],
+    types: ["movie", "series"],
+
     catalogs: [
         {
-            type: 'movie',
-            id: 'arabic_trending_movies',
-            name: 'أحدث الأفلام الرائجة (عربي)'
+            type: "movie",
+            id: "arabic_trending_movies",
+            name: "🔥 رائج - أفلام"
         },
         {
-            type: 'series',
-            id: 'arabic_trending_series',
-            name: 'أحدث المسلسلات الرائجة (عربي)'
+            type: "movie",
+            id: "arabic_featured_movies",
+            name: "⭐ مميز - أفلام"
         },
         {
-            type: 'movie',
-            id: 'arabic_top_rated_movies',
-            name: 'الأفلام المميزة والأعلى تقييماً (عربي)'
+            type: "movie",
+            id: "arabic_action_movies",
+            name: "💥 أكشن - أفلام"
         },
         {
-            type: 'movie',
-            id: 'arabic_action_movies',
-            name: 'أفلام الأكشن (عربي)'
+            type: "series",
+            id: "arabic_trending_series",
+            name: "🔥 رائج - مسلسلات"
+        },
+        {
+            type: "series",
+            id: "arabic_featured_series",
+            name: "⭐ مميز - مسلسلات"
+        },
+        {
+            type: "series",
+            id: "arabic_action_series",
+            name: "💥 أكشن - مسلسلات"
         }
     ]
 });
 
-// دالة لجلب البيانات بنظام Node الأساسي لضمان عدم توقف السيرفر
-function fetchJson(url) {
-    return new Promise((resolve, reject) => {
-        https.get(url, (res) => {
-            let data = '';
-            res.on('data', chunk => data += chunk);
-            res.on('end', () => {
-                try {
-                    resolve(JSON.parse(data));
-                } catch (e) {
-                    reject(e);
-                }
-            });
-        }).on('error', reject);
-    });
-}
-
 builder.defineCatalogHandler(async function(args) {
     try {
-        let url = '';
-        if (args.type === 'movie' && args.id === 'arabic_trending_movies') {
-            url = `https://api.themoviedb.org/3/trending/movie/week?api_key=${TMDB_API_KEY}&language=ar-SA`;
-        } else if (args.type === 'series' && args.id === 'arabic_trending_series') {
-            url = `https://api.themoviedb.org/3/trending/tv/week?api_key=${TMDB_API_KEY}&language=ar-SA`;
-        } else if (args.type === 'movie' && args.id === 'arabic_top_rated_movies') {
-            url = `https://api.themoviedb.org/3/movie/top_rated?api_key=${TMDB_API_KEY}&language=ar-SA`;
-        } else if (args.type === 'movie' && args.id === 'arabic_action_movies') {
-            url = `https://api.themoviedb.org/3/discover/movie?api_key=${TMDB_API_KEY}&with_genres=28&language=ar-SA`;
-        } else {
+        const base = "https://api.themoviedb.org/3";
+        let url = "";
+
+        // 🔥 رائج
+        if (args.type === "movie" && args.id === "arabic_trending_movies") {
+            url = `${base}/trending/movie/week?api_key=${TMDB_API_KEY}&language=ar-SA`;
+        }
+
+        else if (args.type === "series" && args.id === "arabic_trending_series") {
+            url = `${base}/trending/tv/week?api_key=${TMDB_API_KEY}&language=ar-SA`;
+        }
+
+        // ⭐ مميز - الأعلى تقييمًا
+        else if (args.type === "movie" && args.id === "arabic_featured_movies") {
+            url = `${base}/movie/top_rated?api_key=${TMDB_API_KEY}&language=ar-SA&page=1`;
+        }
+
+        else if (args.type === "series" && args.id === "arabic_featured_series") {
+            url = `${base}/tv/top_rated?api_key=${TMDB_API_KEY}&language=ar-SA&page=1`;
+        }
+
+        // 💥 أكشن
+        else if (args.type === "movie" && args.id === "arabic_action_movies") {
+            url = `${base}/discover/movie?api_key=${TMDB_API_KEY}&language=ar-SA&with_genres=28&sort_by=popularity.desc`;
+        }
+
+        else if (args.type === "series" && args.id === "arabic_action_series") {
+            // TMDB: Action & Adventure = 10759 للمسلسلات
+            url = `${base}/discover/tv?api_key=${TMDB_API_KEY}&language=ar-SA&with_genres=10759&sort_by=popularity.desc`;
+        }
+
+        else {
             return { metas: [] };
         }
 
-        const data = await fetchJson(url);
+        const response = await fetch(url);
 
-        if (!data || !data.results) {
+        if (!response.ok) {
+            throw new Error(`TMDB HTTP Error: ${response.status}`);
+        }
+
+        const data = await response.json();
+
+        if (!Array.isArray(data.results)) {
             return { metas: [] };
         }
 
         const metas = data.results.map(item => ({
             id: `tmdb:${item.id}`,
             type: args.type,
-            name: item.title || item.name || 'بدون عنوان',
-            poster: item.poster_path ? `https://image.tmdb.org/t/p/w500${item.poster_path}` : 'https://via.placeholder.com/300x450.png?text=No+Poster',
-            description: item.overview || 'لا يوجد وصف متوفر لهذه العمل.'
+
+            name:
+                item.title ||
+                item.name ||
+                item.original_title ||
+                item.original_name ||
+                "بدون عنوان",
+
+            poster: item.poster_path
+                ? `https://image.tmdb.org/t/p/w500${item.poster_path}`
+                : undefined,
+
+            background: item.backdrop_path
+                ? `https://image.tmdb.org/t/p/original${item.backdrop_path}`
+                : undefined,
+
+            description:
+                item.overview ||
+                "لا يوجد وصف عربي متوفر لهذا العمل.",
+
+            releaseInfo:
+                item.release_date?.substring(0, 4) ||
+                item.first_air_date?.substring(0, 4) ||
+                ""
         }));
 
         return { metas };
+
     } catch (error) {
-        console.error("Error fetching data from TMDB:", error);
+        console.error("TMDB Error:", error);
         return { metas: [] };
     }
 });
 
-serveHTTP(builder.getInterface(), { port: process.env.PORT || 7000 });
+serveHTTP(builder.getInterface(), {
+    port: process.env.PORT || 7000
+});
