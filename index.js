@@ -488,9 +488,7 @@ async function makeMetaPreview(item, type) {
         "";
 
     return {
-        id:
-            imdbId ||
-            `tmdb:${item.id}`,
+        id: `tmdb:${item.id}`,
 
         type,
 
